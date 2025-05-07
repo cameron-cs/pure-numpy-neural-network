@@ -1,7 +1,7 @@
 from src import nn, tensor
 import numpy as np
 
-from src.nn import LSTMCell, StackedLSTM
+from src.nn import LSTMCell, StackedLSTM, Module, Linear, CrossEntropyLoss
 from src.tensor import Tensor
 
 
@@ -136,6 +136,67 @@ def test_stacked_lstm_variable_lengths():
         assert x_seq.grad is not None
 
 
+def validate_lstm_classifier_forward_and_backward():
+    
+    class LSTMClassifier(Module):
+        def __init__(self, input_size, hidden_size, num_layers, num_classes):
+            super().__init__()
+            self.lstm = StackedLSTM(input_size, hidden_size, num_layers)
+            self.fc = Linear(hidden_size, num_classes)
+            self._add_parameter(self.fc.weights)
+            self._add_parameter(self.fc.bias)
+            for layer in self.lstm.layers:
+                self._parameters.extend(layer.parameters())
+
+        def forward(self, x_seq: Tensor) -> Tensor:
+            output_seq, (h_list, _) = self.lstm(x_seq)
+            final_hidden = h_list[-1]
+            logits = self.fc(final_hidden)
+            return logits
+
+    np.random.seed(42)
+    batch_size = 4
+    seq_len = 10
+    input_size = 8
+    hidden_size = 16
+    num_layers = 2
+    num_classes = 3
+
+    x_np = np.random.randn(batch_size, seq_len, input_size)
+    y_np = np.random.randint(0, num_classes, size=(batch_size,))
+
+    x = Tensor(x_np, requires_grad=True)
+    y = Tensor(y_np)
+
+    model = LSTMClassifier(input_size, hidden_size, num_layers, num_classes)
+    criterion = CrossEntropyLoss()
+
+    logits = model(x)
+    assert logits.data.shape == (batch_size, num_classes), \
+        f"Expected logits shape {(batch_size, num_classes)}, got {logits.data.shape}"
+
+    # check argmax predictability
+    preds = np.argmax(logits.data, axis=1)
+    assert np.all((0 <= preds) & (preds < num_classes)), \
+        f"Predicted class indices out of range: {preds}"
+
+    loss = criterion(logits, y)
+    assert np.isscalar(loss.data) or (isinstance(loss.data, np.ndarray) and loss.data.shape == ()), \
+        f"Loss is not scalar: {loss.data}"
+
+    loss.backward()
+
+    # check gradients on final linear layer
+    assert model.fc.weights.grad.shape == model.fc.weights.data.shape, \
+        "Gradient shape mismatch on fc weights"
+    assert not np.allclose(model.fc.weights.grad, 0), \
+        "Zero gradients on fc weights — backprop may be broken"
+
+    grad_sum = np.sum(model.fc.weights.grad, axis=0)
+    assert np.all(np.abs(grad_sum) < 1e-1), \
+        f"Softmax gradient sums should be small, got {grad_sum} (may vary due to small batch size)"
+
+
 if __name__ == '__main__':
     test_tanh_forward_backward()
     test_sigmoid_forward_backward()
@@ -144,3 +205,4 @@ if __name__ == '__main__':
     test_stacked_lstm()
     test_stacked_lstm_shapes_and_grads()
     test_stacked_lstm_variable_lengths()
+    validate_lstm_classifier_forward_and_backward()

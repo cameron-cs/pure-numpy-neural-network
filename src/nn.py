@@ -153,6 +153,83 @@ class Tanh(Module):
         return out
 
 
+class Softmax(Module):
+
+    def __init__(self, axis=-1):
+        super().__init__()
+        self.axis = axis
+
+    def forward(self, x: Tensor) -> Tensor:
+        # shift logits for numerical stability
+        shifted = x.data - np.max(x.data, axis=self.axis, keepdims=True)
+        exp_x = np.exp(shifted)
+        probs = exp_x / np.sum(exp_x, axis=self.axis, keepdims=True)
+
+        out = Tensor(probs, requires_grad=x.requires_grad)
+
+        def _backward():
+            if x.requires_grad:
+                # jacobian-based gradient
+                dx = np.empty_like(x.data)
+                for i in range(x.data.shape[0]):
+                    p = probs[i].reshape(-1, 1)
+                    J = np.diagflat(p) - np.dot(p, p.T)
+                    dx[i] = J @ out.grad[i]
+                x.grad += dx
+
+        out._backward = _backward
+        out._prev = {x}
+        return out
+
+
+class NLLLoss(Module):
+    def forward(self, log_probs: Tensor, targets: Tensor) -> Tensor:
+        batch_size = log_probs.data.shape[0]
+        # gather log_probs of true classes
+        losses = -log_probs.data[np.arange(batch_size), targets.data.astype(int)]
+        loss = np.mean(losses)
+
+        out = Tensor(loss, requires_grad=log_probs.requires_grad or targets.requires_grad)
+
+        def _backward():
+            if log_probs.requires_grad:
+                grad = np.zeros_like(log_probs.data)
+                grad[np.arange(batch_size), targets.data.astype(int)] = -1.0 / batch_size
+                log_probs.grad += grad
+
+        out._backward = _backward
+        out._prev = {log_probs, targets}
+        return out
+
+
+class CrossEntropyLoss(Module):
+
+    def forward(self, logits: Tensor, targets: Tensor) -> Tensor:
+        # stable log-softmax
+        shifted = logits.data - np.max(logits.data, axis=1, keepdims=True)
+        exp_logits = np.exp(shifted)
+        softmax_probs = exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
+        log_probs = np.log(softmax_probs + 1e-9)  # avoid log(0)
+
+        # NLL
+        batch_size = logits.data.shape[0]
+        losses = -log_probs[np.arange(batch_size), targets.data.astype(int)]
+        loss = np.mean(losses)
+
+        out = Tensor(loss, requires_grad=logits.requires_grad or targets.requires_grad)
+
+        def _backward():
+            if logits.requires_grad:
+                grad = softmax_probs
+                grad[np.arange(batch_size), targets.data.astype(int)] -= 1
+                grad /= batch_size
+                logits.grad += grad
+
+        out._backward = _backward
+        out._prev = {logits, targets}
+        return out
+
+
 class LSTMCell(Module):
     """
     A single LSTM cell.

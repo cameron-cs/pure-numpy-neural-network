@@ -9,6 +9,7 @@ def xavier_init(shape):
 def he_init(shape):
     return np.random.randn(*shape) * np.sqrt(2. / shape[0])
 
+
 def unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
     """
     Broadcasts a gradient to the required shape, ensuring dimensions are handled correctly.

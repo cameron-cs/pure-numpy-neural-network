@@ -1,6 +1,7 @@
 import numpy as np
-from nn_utils import xavier_init
-from tensor import Tensor
+
+from src.nn_utils import xavier_init
+from src.tensor import Tensor
 
 
 class Module:

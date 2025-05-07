@@ -1,7 +1,7 @@
 from typing import Union, Tuple
 import numpy as np
 
-from nn_utils import unbroadcast
+from src.nn_utils import unbroadcast
 
 
 class Tensor:

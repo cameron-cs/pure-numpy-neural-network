@@ -161,6 +161,26 @@ class Tanh(Module):
         return out
 
 
+class ReLU(Module):
+    """
+    ReLU (Rectified Linear Unit) activation function.
+    The ReLU function applies the operation f(x) = max(0, x) element-wise to the input tensor.
+    It introduces non-linearity to the model and is commonly used in deep neural networks.
+    """
+    def forward(self, x: Tensor) -> Tensor:
+        out_data = np.maximum(0, x.data)
+        out = Tensor(out_data, requires_grad=x.requires_grad)
+
+        def _backward():
+            if x.requires_grad:
+                grad_input = (x.data > 0).astype(float) * out.grad
+                x.grad += grad_input
+
+        out._backward = _backward
+        out._prev = {x}
+        return out
+
+
 class Softmax(Module):
     """
      Applies the softmax function to the input tensor along the specified axis.

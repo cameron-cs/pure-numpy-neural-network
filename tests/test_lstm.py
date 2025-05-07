@@ -6,10 +6,10 @@ from src.tensor import Tensor
 
 
 def test_concat_forward_backward():
-    a = tensor.Tensor(np.array([[1.0, 2.0]]), requires_grad=True)
-    b = tensor.Tensor(np.array([[3.0, 4.0]]), requires_grad=True)
+    a = Tensor(np.array([[1.0, 2.0]]), requires_grad=True)
+    b = Tensor(np.array([[3.0, 4.0]]), requires_grad=True)
 
-    out = tensor.Tensor.concat([a, b], axis=0)  # shape (2,2)
+    out = Tensor.concat([a, b], axis=0)  # shape (2,2)
     out.backward(np.ones_like(out.data))
 
     assert np.allclose(out.data, np.array([[1, 2], [3, 4]]))
@@ -18,7 +18,7 @@ def test_concat_forward_backward():
 
 
 def test_sigmoid_forward_backward():
-    x = tensor.Tensor(np.array([[0.0, 2.0]]), requires_grad=True)
+    x = Tensor(np.array([[0.0, 2.0]]), requires_grad=True)
     y = nn.Sigmoid().forward(x)
     y.backward(np.ones_like(y.data))
 
@@ -30,7 +30,7 @@ def test_sigmoid_forward_backward():
 
 
 def test_tanh_forward_backward():
-    x = tensor.Tensor(np.array([[0.0, 1.0]]), requires_grad=True)
+    x = Tensor(np.array([[0.0, 1.0]]), requires_grad=True)
     y = nn.Tanh().forward(x)
     y.backward(np.ones_like(y.data))
 
@@ -67,9 +67,9 @@ def test_lstmcell_forward_backward():
 
     lstm = nn.LSTMCell(input_size, hidden_size)
 
-    x = tensor.Tensor(np.random.randn(batch_size, input_size), requires_grad=True)
-    h = tensor.Tensor(np.zeros((batch_size, hidden_size)), requires_grad=True)
-    c = tensor.Tensor(np.zeros((batch_size, hidden_size)), requires_grad=True)
+    x = Tensor(np.random.randn(batch_size, input_size), requires_grad=True)
+    h = Tensor(np.zeros((batch_size, hidden_size)), requires_grad=True)
+    c = Tensor(np.zeros((batch_size, hidden_size)), requires_grad=True)
 
     h_new, c_new = lstm(x, h, c)
 

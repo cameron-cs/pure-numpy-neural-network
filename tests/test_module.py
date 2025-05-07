@@ -283,11 +283,6 @@ def test_softmax_classifier():
     assert model.linear.weights.grad is not None, "No gradient on weights"
     assert not np.allclose(model.linear.weights.grad, 0), "Weights gradient is zero"
 
-    print("✅ SoftmaxClassifier test passed.")
-    print("Predicted probabilities:\n", probs.data)
-    print("Loss:", loss.data)
-    print("Gradients on weights:\n", model.linear.weights.grad)
-
 
 if __name__ == '__main__':
     test_module_parameter_registration()

@@ -1,4 +1,4 @@
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import numpy as np
 
 from src.nn_utils import unbroadcast
@@ -335,4 +335,25 @@ class Tensor:
                 self.grad += grad
 
         out._backward = _backward
+        return out
+
+    @staticmethod
+    def concat(tensors: List['Tensor'], axis: int = 0) -> 'Tensor':
+        data = np.concatenate([t.data for t in tensors], axis=axis)
+        requires_grad = any(t.requires_grad for t in tensors)
+        out = Tensor(data, requires_grad)
+
+        def _backward():
+            if not out.requires_grad:
+                return
+
+            sizes = [t.data.shape[axis] for t in tensors]
+            splits = np.split(out.grad, np.cumsum(sizes[:-1]), axis=axis)
+
+            for i, t in enumerate(tensors):
+                if t.requires_grad:
+                    t.grad += splits[i]
+
+        out._backward = _backward
+        out._prev = set(t for t in tensors if t.requires_grad)
         return out

@@ -112,6 +112,7 @@ def test_broadcast_grad():
     assert np.allclose(a.grad, [[2.0], [2.0]])
     assert np.allclose(b.grad, [[2.0, 2.0]])
 
+
 if __name__ == '__main__':
     test_add()
     test_mul_and_pow()

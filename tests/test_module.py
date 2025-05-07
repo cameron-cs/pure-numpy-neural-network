@@ -104,6 +104,42 @@ def test_parameters_aggregation_sequential():
     assert all(p in all_params for p in l1.parameters())
     assert all(p in all_params for p in l2.parameters())
 
+
+def test_linear_regression_simple():
+    np.random.seed(0)
+
+    # Create synthetic data: y = 2 * x + 3
+    x_data = np.random.randn(100, 1)
+    y_data = 2 * x_data + 3
+
+    x = tensor.Tensor(x_data, requires_grad=False)
+    y_true = tensor.Tensor(y_data, requires_grad=False)
+
+    # Model: Linear layer with 1 input, 1 output
+    model = nn.Linear(1, 1)
+    loss_fn = nn.MSELoss()
+    lr = 0.1
+
+    # Train for a few epochs
+    for epoch in range(100):
+        y_pred = model(x)
+        loss = loss_fn(y_pred, y_true)
+
+        model.zero_grad()
+        loss.backward()
+
+        # Manual SGD
+        for param in model.parameters():
+            param.data -= lr * param.grad
+
+    # Test learned parameters are close to [2.0, 3.0]
+    w_learned = model.weights.data.item()
+    b_learned = model.bias.data.item()
+
+    assert abs(w_learned - 2.0) < 0.1, f"Weight too far: {w_learned}"
+    assert abs(b_learned - 3.0) < 0.1, f"Bias too far: {b_learned}"
+
+
 if __name__ == '__main__':
     test_module_parameter_registration()
     test_linear_forward_shape_and_values()
@@ -112,3 +148,4 @@ if __name__ == '__main__':
     test_sequential_backward()
     test_zero_grad()
     test_parameters_aggregation_sequential()
+    test_linear_regression_simple()

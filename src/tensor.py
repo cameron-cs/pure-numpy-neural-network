@@ -162,6 +162,9 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def __neg__(self):
+        return self * Tensor(-1.0)
+
     def softmax(self, dim: int = 1) -> 'Tensor':
         """
         Compute the softmax along the specified dimension.

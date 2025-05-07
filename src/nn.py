@@ -128,6 +128,14 @@ class Sigmoid(Module):
         return out
 
 
+class BCELoss(Module):
+
+    def forward(self, pred: Tensor, target: Tensor) -> Tensor:
+        eps = Tensor(1e-8)
+        one = Tensor(1.0)
+        return Tensor(-1.0) * ((target * (pred + eps).log()) + ((one - target) * (one - pred + eps).log())).mean()
+
+
 class Tanh(Module):
     """
     Tanh activation function module.
@@ -164,7 +172,6 @@ class Softmax(Module):
         shifted = x.data - np.max(x.data, axis=self.axis, keepdims=True)
         exp_x = np.exp(shifted)
         probs = exp_x / np.sum(exp_x, axis=self.axis, keepdims=True)
-
         out = Tensor(probs, requires_grad=x.requires_grad)
 
         def _backward():

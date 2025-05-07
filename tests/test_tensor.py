@@ -1,6 +1,6 @@
 import numpy as np
 
-from src import tensor
+from src import tensor, nn
 
 EPS = 1e-5
 RTOL = 1e-4
@@ -71,26 +71,11 @@ def test_exp_log():
     assert np.allclose(x.grad, np.ones_like(x.data), atol=ATOL)
 
 
-def test_relu():
-    x = tensor.Tensor([-1.0, 0.0, 1.0], requires_grad=True)
-    y = x.relu()
-    y.backward(np.ones_like(x.data))
-    assert np.allclose(y.data, [0.0, 0.0, 1.0])
-    assert np.allclose(x.grad, [0.0, 0.0, 1.0])
-
-
-def test_softmax_backward():
-    x = tensor.Tensor([[2.0, 1.0, 0.1]], requires_grad=True)
-    y = x.softmax()
-    y.backward(np.array([[1.0, 0.0, 0.0]]))
-    assert y.data.shape == x.data.shape
-    assert x.grad.shape == x.data.shape
-
-
 def test_cross_entropy_loss():
     x = tensor.Tensor([[1.0, 2.0, 3.0]], requires_grad=True)
     y = tensor.Tensor([2])
-    loss = x.cross_entropy(y)
+    cross_entropy = nn.CrossEntropyLoss()
+    loss = cross_entropy(x, y)
     loss.backward()
     assert np.isclose(loss.data, -np.log(np.exp(3) / np.sum(np.exp(x.data))), atol=ATOL)
     assert x.grad.shape == x.data.shape
@@ -99,7 +84,8 @@ def test_cross_entropy_loss():
 def test_backward_chain():
     x = tensor.Tensor([1.0, 2.0, 3.0], requires_grad=True)
     y = x * 2
-    z = (y + 1).relu()
+    relu = nn.ReLU()
+    z = relu(y + 1)
     out = z.sum()
     out.backward()
     assert x.grad.shape == x.data.shape
@@ -131,8 +117,6 @@ if __name__ == '__main__':
     test_mul_and_pow()
     test_matmul()
     test_exp_log()
-    test_relu()
-    test_softmax_backward()
     test_cross_entropy_loss()
     test_backward_chain()
     test_numerical_gradient_match()

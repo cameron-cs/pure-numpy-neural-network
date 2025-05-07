@@ -165,59 +165,6 @@ class Tensor:
     def __neg__(self):
         return self * Tensor(-1.0)
 
-    def softmax(self, dim: int = 1) -> 'Tensor':
-        """
-        Compute the softmax along the specified dimension.
-
-        Args:
-            dim (int): The dimension along which to compute the softmax.
-
-        Returns:
-            Tensor: A new tensor representing the softmax of this tensor along the specified dimension.
-        """
-        exps = (self - self.data.max(axis=dim, keepdims=True)).exp()
-        sums = exps.data.sum(axis=dim, keepdims=True)
-        out = Tensor(exps.data / sums, requires_grad=self.requires_grad,
-                     _children=(self,), _op='softmax')
-
-        def _backward():
-            if self.requires_grad:
-                grad = out.grad
-                s = out.data
-                dot = (grad * s).sum(axis=dim, keepdims=True)
-                self_grad = s * (grad - dot)
-                self.grad += self_grad  # safe: already same shape
-
-        out._backward = _backward
-        return out
-
-    def cross_entropy(self, target: 'Tensor') -> 'Tensor':
-        """
-        Compute the cross-entropy loss.
-
-        Args:
-            target (Tensor): A tensor of true class labels.
-
-        Returns:
-            Tensor: A new tensor representing the cross-entropy loss.
-        """
-        probs = self.softmax(dim=1)
-        N = target.data.shape[0]
-        log_probs = probs.log()
-        loss_vals = -log_probs.data[np.arange(N), target.data.astype(int)]
-        out = Tensor(loss_vals.mean(), requires_grad=self.requires_grad,
-                     _children=(self,), _op='cross_entropy')
-
-        def _backward():
-            if self.requires_grad:
-                grad = probs.data.copy()
-                grad[np.arange(N), target.data.astype(int)] -= 1
-                grad = grad / N
-                self.grad += grad
-
-        out._backward = _backward
-        return out
-
     def __mul__(self, other: Union['Tensor', float, int]) -> 'Tensor':
         """
         Multiply this tensor by another tensor or scalar.
@@ -290,16 +237,6 @@ class Tensor:
                     other.grad = grad_other
                 else:
                     other.grad += grad_other
-
-        out._backward = _backward
-        return out
-
-    def relu(self):
-        out = Tensor(np.maximum(0, self.data), requires_grad=self.requires_grad, _children=(self,), _op='ReLU')
-
-        def _backward():
-            if self.requires_grad:
-                self.grad += unbroadcast((self.data > 0) * out.grad, self.data.shape)
 
         out._backward = _backward
         return out

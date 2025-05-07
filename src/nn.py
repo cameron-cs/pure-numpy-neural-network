@@ -162,6 +162,23 @@ class Tanh(Module):
 
 
 class Softmax(Module):
+    """
+     Applies the softmax function to the input tensor along the specified axis.
+
+     Softmax converts raw logits into probabilities by exponentiating and normalising them.
+     The output probabilities sum to 1 along the given axis.
+
+     Parameters:
+         axis (int): Axis over which to compute softmax. Default is -1 (last dimension).
+
+     Forward:
+         Input: Tensor of shape (batch_size, num_classes) or similar.
+         Output: Same shape, with probabilities in range (0, 1), summing to 1 across `axis`.
+
+     Backward:
+         Computes the Jacobian-vector product for each sample in the batch using the softmax Jacobian:
+             J = diag(p) - p @ p.T
+     """
 
     def __init__(self, axis=-1):
         super().__init__()
@@ -190,6 +207,22 @@ class Softmax(Module):
 
 
 class NLLLoss(Module):
+    """
+    Computes the negative log-likelihood loss from log-probabilities.
+
+    This loss expects `log_probs` (typically the output of log-softmax or softmax().log())
+    and the integer class indices `targets`.
+
+    Forward:
+        Input:
+            log_probs: Tensor of shape (batch_size, num_classes), log-probabilities
+            targets:   Tensor of shape (batch_size,), class indices [0, ..., num_classes - 1]
+        Output:
+            Scalar loss (mean over batch)
+
+    Backward:
+        dL/dlog_probs = -1 / batch_size for the true class, 0 elsewhere.
+    """
     def forward(self, log_probs: Tensor, targets: Tensor) -> Tensor:
         batch_size = log_probs.data.shape[0]
         # gather log_probs of true classes
@@ -210,7 +243,26 @@ class NLLLoss(Module):
 
 
 class CrossEntropyLoss(Module):
+    """
+    Computes cross-entropy loss between raw logits and target labels.
 
+    This loss combines:
+        1. Log-Softmax
+        2. Negative Log-Likelihood (NLL)
+
+    It's numerically stable and more efficient than applying Softmax + Log + NLL separately.
+
+    Forward:
+        Input:
+            logits: Tensor of shape (batch_size, num_classes)
+            targets: Tensor of shape (batch_size,), int labels
+        Output:
+            Scalar loss (mean cross-entropy)
+
+    Backward:
+        Efficient softmax derivative:
+            dL/dlogits = softmax - one_hot(targets) / batch_size
+    """
     def forward(self, logits: Tensor, targets: Tensor) -> Tensor:
         # stable log-softmax
         shifted = logits.data - np.max(logits.data, axis=1, keepdims=True)

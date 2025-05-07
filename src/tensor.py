@@ -21,7 +21,7 @@ class Tensor:
     def __init__(self, data: Union[np.ndarray, float, int], requires_grad: bool = False,
                  _children: Tuple['Tensor', ...] = (), _op: str = ''):
         """
-        Initialize a Tensor object.
+        Initialise a Tensor object.
 
         Args:
             data (Union[np.ndarray, float, int]): The data for the tensor.

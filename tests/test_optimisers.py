@@ -5,6 +5,25 @@ from src.optim import SGDMomentum
 from src.tensor import Tensor
 
 
+def test_optimiser_step():
+    layer = Linear(4, 2)
+    optimizer = SGDMomentum(layer.parameters(), lr=0.01, momentum=0.9)
+
+    x = Tensor(np.random.randn(1, 4), requires_grad=False)
+    y = Tensor(np.random.randn(1, 2), requires_grad=False)
+
+    loss_fn = MSELoss()
+
+    initial_weight = layer.weights.data.copy()
+
+    pred = layer(x)
+    loss = loss_fn(pred, y)
+    layer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    assert not np.allclose(initial_weight, layer.weights.data), "Weights did not update"
+
 def test_sequential_mlp_grad():
     x = Tensor(np.random.randn(10, 3), requires_grad=False)
     y = Tensor(np.random.randn(10, 2), requires_grad=False)
@@ -53,5 +72,6 @@ def test_linear_regression_sgd_with_momentum():
 
 
 if __name__ == '__main__':
+    test_optimiser_step()
     test_linear_regression_sgd_with_momentum()
     test_sequential_mlp_grad()

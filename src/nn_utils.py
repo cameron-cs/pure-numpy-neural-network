@@ -10,6 +10,14 @@ def he_init(shape):
     return np.random.randn(*shape) * np.sqrt(2. / shape[0])
 
 
+def uniform_init(shape, low=-0.1, high=0.1):
+    return np.random.uniform(low, high, size=shape)
+
+
+def normal_init(shape, mean=0.0, std=1.0):
+    return np.random.normal(loc=mean, scale=std, size=shape)
+
+
 def unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
     """
     Broadcasts a gradient to the required shape, ensuring dimensions are handled correctly.

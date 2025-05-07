@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional, List
 
 import numpy as np
 
@@ -194,3 +194,57 @@ class LSTMCell(Module):
         c = f * c_prev + i * g  # new cell state
         h = o * self.tanh(c)  # new hidden state
         return h, c
+
+
+class StackedLSTM(Module):
+    """
+    A stack of LSTM cells.
+
+    Inputs:
+        - x_seq: (batch_size, seq_len, input_size)
+        - h0: Optional list of hidden states for each layer [(batch, hidden), ...]
+        - c0: Optional list of cell states for each layer [(batch, hidden), ...]
+
+    Outputs:
+        - output_seq: (batch_size, seq_len, hidden_size)
+        - (h_list, c_list): final states for each layer
+    """
+
+    def __init__(self, input_size, hidden_size, num_layers, **cell_kwargs):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        self.layers = []
+        for i in range(num_layers):
+            layer_input_size = input_size if i == 0 else hidden_size
+            cell = LSTMCell(layer_input_size, hidden_size, **cell_kwargs)
+            self.layers.append(cell)
+
+    def forward(self, x_seq, h0=None, c0=None):
+        batch_size, seq_len, _ = x_seq.shape()
+
+        if h0 is None:
+            h0 = [Tensor.zeros((batch_size, self.hidden_size)) for _ in range(self.num_layers)]
+        if c0 is None:
+            c0 = [Tensor.zeros((batch_size, self.hidden_size)) for _ in range(self.num_layers)]
+
+        outputs = []
+        h_list = h0
+        c_list = c0
+
+        for t in range(seq_len):
+            x_t = Tensor(x_seq.data[:, t, :], requires_grad=True)
+
+            for layer_idx, cell in enumerate(self.layers):
+                h_prev = h_list[layer_idx]
+                c_prev = c_list[layer_idx]
+                h, c = cell(x_t, h_prev, c_prev)
+                h_list[layer_idx] = h
+                c_list[layer_idx] = c
+                x_t = h
+
+            outputs.append(x_t)
+
+        output_seq = Tensor.stack(outputs, axis=1)
+        return output_seq, (h_list, c_list)

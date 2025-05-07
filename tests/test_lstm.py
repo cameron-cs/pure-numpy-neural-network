@@ -1,20 +1,8 @@
 from src import nn, tensor
 import numpy as np
 
-from src.nn import LSTMCell
+from src.nn import LSTMCell, StackedLSTM
 from src.tensor import Tensor
-
-
-def test_concat_forward_backward():
-    a = Tensor(np.array([[1.0, 2.0]]), requires_grad=True)
-    b = Tensor(np.array([[3.0, 4.0]]), requires_grad=True)
-
-    out = Tensor.concat([a, b], axis=0)  # shape (2,2)
-    out.backward(np.ones_like(out.data))
-
-    assert np.allclose(out.data, np.array([[1, 2], [3, 4]]))
-    assert np.allclose(a.grad, np.ones_like(a.data))
-    assert np.allclose(b.grad, np.ones_like(b.data))
 
 
 def test_sigmoid_forward_backward():
@@ -92,9 +80,29 @@ def test_lstmcell_forward_backward():
     assert np.any(c.grad != 0), "c.grad is zero"
 
 
+def test_stacked_lstm():
+    import numpy as np
+
+    B, T, I, H, L = 2, 4, 3, 5, 2
+    x_seq = Tensor(np.random.randn(B, T, I), requires_grad=True)
+
+    model = StackedLSTM(input_size=I, hidden_size=H, num_layers=L)
+    out, (h_list, c_list) = model(x_seq)
+
+    assert out.data.shape == (B, T, H)
+    assert all(h.data.shape == (B, H) for h in h_list)
+    assert all(c.data.shape == (B, H) for c in c_list)
+
+    # Backward pass
+    loss = out.sum()
+    loss.backward()
+    assert x_seq.grad is not None
+    print("✅ test_stacked_lstm passed")
+
+
 if __name__ == '__main__':
     test_tanh_forward_backward()
     test_sigmoid_forward_backward()
-    test_concat_forward_backward()
     test_lstmcell_backward()
     test_lstmcell_forward_backward()
+    test_stacked_lstm()

@@ -357,3 +357,15 @@ class Tensor:
         out._backward = _backward
         out._prev = set(t for t in tensors if t.requires_grad)
         return out
+
+    def shape(self):
+        return self.data.shape
+
+    @staticmethod
+    def zeros(shape) -> 'Tensor':
+        return Tensor(np.zeros(shape), requires_grad=True)
+
+    @staticmethod
+    def stack(tensors, axis=1) -> 'Tensor':
+        data = np.stack([t.data for t in tensors], axis=axis)
+        return Tensor(data, requires_grad=True)

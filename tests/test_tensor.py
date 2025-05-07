@@ -7,6 +7,18 @@ RTOL = 1e-4
 ATOL = 1e-6
 
 
+def test_concat_forward_backward():
+    a = tensor.Tensor(np.array([[1.0, 2.0]]), requires_grad=True)
+    b = tensor.Tensor(np.array([[3.0, 4.0]]), requires_grad=True)
+
+    out = tensor.Tensor.concat([a, b], axis=0)  # shape (2,2)
+    out.backward(np.ones_like(out.data))
+
+    assert np.allclose(out.data, np.array([[1, 2], [3, 4]]))
+    assert np.allclose(a.grad, np.ones_like(a.data))
+    assert np.allclose(b.grad, np.ones_like(b.data))
+
+
 def numerical_grad(f, x: np.ndarray):
     grad = np.zeros_like(x)
     it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
@@ -114,6 +126,7 @@ def test_broadcast_grad():
 
 
 if __name__ == '__main__':
+    test_concat_forward_backward()
     test_add()
     test_mul_and_pow()
     test_matmul()

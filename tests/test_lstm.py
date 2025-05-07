@@ -93,11 +93,10 @@ def test_stacked_lstm():
     assert all(h.data.shape == (B, H) for h in h_list)
     assert all(c.data.shape == (B, H) for c in c_list)
 
-    # Backward pass
+    # backward pass
     loss = out.sum()
     loss.backward()
     assert x_seq.grad is not None
-    print("✅ test_stacked_lstm passed")
 
 
 if __name__ == '__main__':

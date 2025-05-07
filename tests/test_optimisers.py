@@ -7,7 +7,7 @@ from src.tensor import Tensor
 
 def test_optimiser_step():
     layer = Linear(4, 2)
-    optimizer = SGDMomentum(layer.parameters(), lr=0.01, momentum=0.9)
+    optimiser = SGDMomentum(layer.parameters(), lr=0.01, momentum=0.9)
 
     x = Tensor(np.random.randn(1, 4), requires_grad=False)
     y = Tensor(np.random.randn(1, 2), requires_grad=False)
@@ -20,7 +20,7 @@ def test_optimiser_step():
     loss = loss_fn(pred, y)
     layer.zero_grad()
     loss.backward()
-    optimizer.step()
+    optimiser.step()
 
     assert not np.allclose(initial_weight, layer.weights.data), "Weights did not update"
 
@@ -35,14 +35,14 @@ def test_sequential_mlp_grad():
     )
 
     loss_fn = MSELoss()
-    optimizer = SGDMomentum(model.parameters(), lr=0.01, momentum=0.8)
+    optimiser = SGDMomentum(model.parameters(), lr=0.01, momentum=0.8)
 
     for _ in range(50):
         out = model(x)
         loss = loss_fn(out, y)
         model.zero_grad()
         loss.backward()
-        optimizer.step()
+        optimiser.step()
 
     final_loss = loss.data.item()
     assert final_loss < 1.0
@@ -57,14 +57,14 @@ def test_linear_regression_sgd_with_momentum():
 
     model = Linear(1, 1)
     loss_fn = MSELoss()
-    optimizer = SGDMomentum(model.parameters(), lr=0.01, momentum=0.9)
+    optimiser = SGDMomentum(model.parameters(), lr=0.01, momentum=0.9)
 
     for epoch in range(100):
         pred = model(x)
         loss = loss_fn(pred, y)
         model.zero_grad()
         loss.backward()
-        optimizer.step()
+        optimiser.step()
 
     w = model.weights.data.item()
     b = model.bias.data.item()

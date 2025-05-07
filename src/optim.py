@@ -31,7 +31,7 @@ class SGDMomentum(Optimiser):
 
     def __init__(self, params, lr=0.01, momentum=0.9):
         """
-        Initializes the SGD optimiser with momentum.
+        Initialises the SGD optimiser with momentum.
 
         Args:
             params (iterable): List of parameters (weights and biases) to optimise.
